@@ -80,30 +80,35 @@ contract DAO {
     /// @dev very simple for now needs to be implemented
     function joinDAO() external {
         DAOMembers[msg.sender] = true;
+        emit NewMember(msg.sender);
     }
 
 
-    function proposeVote(uint _endingTime, string memory _name) external isUserMember {
+    function propose(uint _endingTime, string memory _name) external isUserMember {
         Proposal storage newProposal = proposals[proposalCursor];
         newProposal.name = _name;
         newProposal.endingTime = _endingTime;
         newProposal.proposer = msg.sender;
+        newProposal.status = VotingStatus.PENDING;
         proposalCursor += 1;
+        emit NewProposal(proposalCursor - 1, _name);
     }
 
-    // function addProposalToVote(uint _voteId, Proposal memory _proposal) external isVotePossible(_voteId) {
-    //     proposals[_voteId].proposals.push(_proposal);
-    // }
-    
-
-    function vote(uint _proposalId, VoteOption myVote) external isVotePossible(_proposalId) isUserMember canUserVote(_proposalId) {
+    function vote(uint _proposalId, VoteOption userVote) external isVotePossible(_proposalId) isUserMember canUserVote(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
-        if (myVote == VoteOption.ACCEPT) {
+
+        require(proposal.status == VotingStatus.PENDING, "Vote is closed");
+
+        if (userVote == VoteOption.ACCEPT) {
             proposal.positiveVoteNumber += 1;
         }
         else {
             proposal.negativeVoteNumber += 1;
         }
+
+        emit NewVote(msg.sender, _proposalId, userVote);
     }
+
+    
 
 }
