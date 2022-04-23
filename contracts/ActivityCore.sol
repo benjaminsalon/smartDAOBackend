@@ -59,8 +59,6 @@ contract Activity {
     struct Proposal {
         string name;
         address proposer;
-        uint totalPositiveVoteNumber;
-        uint totalNegativeVoteNumber;
         uint endingTime;
         VotingStatus status;
         mapping(uint => Date) datesProposed;
@@ -115,7 +113,7 @@ contract Activity {
         for (i = 0; i < datesProposed.length; i++){
             newProposal.datesProposed[i] = datesProposed[i];
         }
-        newProposal.datesCursor = i + 1;
+        newProposal.datesCursor = i;
         proposalCursor += 1;
         emit NewProposal(proposalCursor - 1, _name);
     }
