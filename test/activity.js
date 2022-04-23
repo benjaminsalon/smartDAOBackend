@@ -248,6 +248,8 @@ describe.only("Activity Testing", function () {
     console.log(`Balance user1 after getting stake back : ${balanceUser1After}`);
     console.log(`Balance user2 after getting stake back : ${balanceUser2After}`);
 
+    // user cannot claim twice
+    await expect(activity.connect(user1).claimUnusedStaking()).to.revertedWith("Member has already claimed back");
   });
 
 });

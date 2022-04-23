@@ -49,7 +49,13 @@ contract Activity {
     bool public consensusReached;
     bool public voteResultGiven;
 
-    mapping(address => bool) public ActivityMembers;
+    mapping(address => bool) public activityMembers;
+    address[] public activityMembersArray;
+
+    mapping(address => bool) public activityMembersParticipating;
+    address[] public activityMembersParticipatingArray;
+
+    mapping(address => bool) private memberHasClaimedBack;
     mapping(uint => Location) public locationsProposed;
 
 
@@ -101,7 +107,8 @@ contract Activity {
         stakeFee = _stakeFee;
         tokenUsed = _tokenUsed;
         creator = _creator;
-        ActivityMembers[creator] = true;
+        activityMembers[creator] = true;
+        activityMembersArray.push(creator);
         consensusReached = false;
         voteResultGiven = false;
         bestLocationAndTime = LocationAndTime(0, 0, 0);
@@ -131,7 +138,7 @@ contract Activity {
 
     modifier isUserMember() {
         // Check if user is a member of the Activity
-        require(ActivityMembers[msg.sender], "Not a Activity member");
+        require(activityMembers[msg.sender], "Not a Activity member");
         _;
     }
 
@@ -144,7 +151,8 @@ contract Activity {
     /// @notice Manage who can enter the Activity
     /// @dev very simple for now needs to be implemented
     function joinActivity() external {
-        ActivityMembers[msg.sender] = true;
+        activityMembers[msg.sender] = true;
+        activityMembersArray.push(msg.sender);
         emit NewMember(msg.sender);
     }
 
@@ -202,6 +210,17 @@ contract Activity {
     function getResultVoting() external isVoteFinished {
         if (bestLocationAndTime.positiveVoteNumber >= minNumberOfPlayer){
             consensusReached = true;
+
+            // We need to get the members that are coming to the activity
+            DateVotes storage chosenDateVotes = locationsProposed[bestLocationAndTime.locationId].datesProposedVotes[bestLocationAndTime.dateId];
+            for (uint i = 0; i < activityMembersArray.length; i++) {
+                address member = activityMembersArray[i];
+                // If the member has voted for the chosen date they is participating
+                if (chosenDateVotes.votingUsers[member]){
+                    activityMembersParticipating[member] = true;
+                    activityMembersParticipatingArray.push(member);
+                }
+            }
         }
         else {
             consensusReached = false;
@@ -211,6 +230,8 @@ contract Activity {
     }
 
     function claimUnusedStaking() external isVoteFinishedAndResultGiven isUserMember{
+        require(!memberHasClaimedBack[msg.sender], "Member has already claimed back");
+        memberHasClaimedBack[msg.sender] = true;
         uint amountToSendBack = 0;
         // If consensus is reached user can claim his stake for all Location voting EXCEPT the chosen one
         if (consensusReached){
