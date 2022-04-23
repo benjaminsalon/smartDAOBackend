@@ -33,7 +33,7 @@ contract Activity {
     event NewProposal(uint proposalId, string name);
     event NewVote(address voter, uint proposalId, VoteOption[] vote);
     event NewMember(address newMember);
-    event NewDateProposed(uint activityId, Date dateProposed);
+    event NewDateProposed(uint proposalId, Date dateProposed);
 
     enum VotingStatus {
         PENDING,
@@ -82,8 +82,14 @@ contract Activity {
     }
 
     modifier isUserMember() {
-         // Check if user is a member of the Activity
+        // Check if user is a member of the Activity
         require(ActivityMembers[msg.sender], "Not a Activity member");
+        _;
+    }
+
+    modifier isProposalIdValid(uint _proposalId) {
+        // Check if _proposalId points to an existing proposal
+        require(_proposalId < proposalCursor, "ProposalId invalid");
         _;
     }
 
@@ -110,14 +116,14 @@ contract Activity {
         emit NewProposal(proposalCursor - 1, _name);
     }
 
-    function addDateToExistingProposal(uint activityId, Date memory dateProposed) external isUserMember {
-        Proposal storage proposal = placesProposed[activityId];
+    function addDateToExistingProposal(uint proposalId, Date memory dateProposed) external isUserMember {
+        Proposal storage proposal = placesProposed[proposalId];
         proposal.datesProposed[proposal.datesCursor] = dateProposed;
         proposal.datesCursor += 1;
-        emit NewDateProposed(activityId, dateProposed);
+        emit NewDateProposed(proposalId, dateProposed);
     }
 
-    function vote(uint _proposalId, VoteOption[] memory userVotes) external isVotePossible(_proposalId) isUserMember canUserVote(_proposalId) {
+    function vote(uint _proposalId, VoteOption[] memory userVotes) external isProposalIdValid(_proposalId) isVotePossible(_proposalId) isUserMember canUserVote(_proposalId) {
         Proposal storage proposal = placesProposed[_proposalId];
 
         require(proposal.status == VotingStatus.PENDING, "Vote is closed");
