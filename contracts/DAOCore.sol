@@ -24,36 +24,59 @@ contract DAO {
 
     string public name;
 
-    Vote[] public votes;
+    Proposal[] public proposals;
+
+    mapping(address => bool) public DAOMembers;
+
+    enum VotingStatus {
+        PENDING,
+        ACCEPTED,
+        REJECTED
+    }
+
+    enum VoteOption {
+        ACCEPT,
+        REJECT
+    }
 
     struct Proposal {
         string name;
-        uint voteNumber;
-    }
-
-    struct Vote {
-        Proposal[] proposals;
+        uint positiveVoteNumber;
+        uint negativeVoteNumber;
         uint endingTime;
+        VotingStatus status;
+        mapping(address => bool) userVotes;
     }
 
     constructor(string memory _name) {
         name = _name;
     }
 
-    modifier isVotePossible(uint _voteId){
-        require(block.timestamp < votes[_voteId].endingTime, "Vote is no more possible");
+    modifier isVotePossible(uint _proposalId){
+        require(block.timestamp < proposals[_proposalId].endingTime, "Vote is no more possible");
         _;
     }
 
-    function proposeVote(uint _endingTime, Proposal[] memory _startingProposals) external {
-        Vote memory newVote = Vote({endingTime: _endingTime, proposals:_startingProposals});
-        votes.push(newVote);
+    modifier canUserVote(uint _proposalId) {
+        // Check if user is a member of the DAO
+        require(DAOMembers[msg.sender], "Not a DAO member");
+        // Check if the user has already voted in the proposal
+        require(!proposals[_proposalId].userVotes[msg.sender], "Already voted");
+        _;
     }
 
-    function addProposalToVote(uint _voteId, Proposal memory _proposal) external isVotePossible(_voteId) {
-        votes[_voteId].proposals.push(_proposal);
+    function proposeVote(uint _endingTime, string _name) external {
+        Proposal memory newProposal = Proposal({name : _name, endingTime: _endingTime});
+        proposals.push(newProposal);
     }
+
+    // function addProposalToVote(uint _voteId, Proposal memory _proposal) external isVotePossible(_voteId) {
+    //     proposals[_voteId].proposals.push(_proposal);
+    // }
     
 
+    function vote(uint _proposalId, VoteOption myVote) external isVotePossible(_proposalId) canUserVote(_proposalId) {
+
+    }
 
 }
