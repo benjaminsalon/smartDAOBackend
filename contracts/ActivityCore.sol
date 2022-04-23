@@ -26,6 +26,15 @@ contract Activity {
     string public name;
     address public creator;
 
+    struct LocationAndTime {
+        uint locationId;
+        uint dateId;
+        uint positiveVoteNumber;
+    }
+
+    // Best Location and time updated with each vote
+    LocationAndTime public bestLocationAndTime;
+
     uint public endingTimeForConsensus;
 
     mapping(address => bool) public ActivityMembers;
@@ -75,6 +84,8 @@ contract Activity {
         locationCursor = 0;
         creator = _creator;
         ActivityMembers[creator] = true;
+
+        bestLocationAndTime = LocationAndTime(0, 0, 0);
     }
 
     modifier isVotePossible(uint _locationId){
@@ -137,6 +148,12 @@ contract Activity {
             VoteOption userVote = userVotes[i];
             if (userVote == VoteOption.ACCEPT) {
                 location.datesProposedVotes[i].positiveVoteNumber += 1;
+                uint positiveVoteNumber = location.datesProposedVotes[i].positiveVoteNumber;
+                if (positiveVoteNumber > bestLocationAndTime.positiveVoteNumber) {
+                    bestLocationAndTime.dateId = i;
+                    bestLocationAndTime.locationId = _locationId;
+                    bestLocationAndTime.positiveVoteNumber = positiveVoteNumber;
+                }
             }
             else {
                 location.datesProposedVotes[i].negativeVoteNumber += 1;
