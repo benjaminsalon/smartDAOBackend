@@ -35,6 +35,8 @@ contract Activity {
 
     uint minNumberOfPlayer;
     uint stakeFee;
+    
+    uint presenceTreshold;
 
     struct LocationAndTime {
         uint locationId;
@@ -52,10 +54,16 @@ contract Activity {
     mapping(address => bool) public activityMembers;
     address[] public activityMembersArray;
 
-    mapping(address => bool) public activityMembersParticipating;
-    address[] public activityMembersParticipatingArray;
+    // Useful for the check-in process before the game
+    mapping(address => bool) public participants;
+    address[] public participantsArray;
+    // Each user says whether the other are presents and it adds up in the following mapping
+    mapping(address => uint) public presenceCounter;
+    mapping(address => bool) public hasRegisteredPresence;
 
     mapping(address => bool) private memberHasClaimedBack;
+    //Used to know if user has claimed the stake back
+    mapping(address => bool) private stakeClaimed;
     mapping(uint => Location) public locationsProposed;
 
 
@@ -67,6 +75,7 @@ contract Activity {
     event NewDateProposed(uint locationId, Date dateProposed);
     event AmountSentBackToUser(address user, uint amount);
     event ResultingVote(bool consensusReached, uint locationId, uint dateId);
+    event StakeClaimed(address member);
 
     enum VotingStatus {
         PENDING,
@@ -139,6 +148,11 @@ contract Activity {
     modifier isUserMember() {
         // Check if user is a member of the Activity
         require(activityMembers[msg.sender], "Not a Activity member");
+        _;
+    }
+
+    modifier onlyParticipatingMember() {
+        require(participants[msg.sender], "User is not participating");
         _;
     }
 
@@ -217,10 +231,13 @@ contract Activity {
                 address member = activityMembersArray[i];
                 // If the member has voted for the chosen date they is participating
                 if (chosenDateVotes.votingUsers[member]){
-                    activityMembersParticipating[member] = true;
-                    activityMembersParticipatingArray.push(member);
+                    participants[member] = true;
+                    participantsArray.push(member);
                 }
             }
+
+            // Define the presence treshold according to the number of participating users (~50% consensus)
+            presenceTreshold = participantsArray.length / 2 + 1;
         }
         else {
             consensusReached = false;
@@ -242,13 +259,11 @@ contract Activity {
                 if (i == chosenLocationId) {
                     bool hasUserVotedOnChosenDate = locationsProposed[chosenLocationId].datesProposedVotes[chosenDateId].votingUsers[msg.sender];
                     if (!hasUserVotedOnChosenDate && hasUserVotedOnLocation) {
-                        console.log("First if : i value",i);
                         amountToSendBack += stakeFee;
                     }
                 }
                 else {
                     if (hasUserVotedOnLocation)  {
-                        console.log("Second if : i value",i);
                         amountToSendBack += stakeFee;
                     }
                 }
@@ -271,4 +286,44 @@ contract Activity {
         }
         emit AmountSentBackToUser(msg.sender, amountToSendBack);
     }
+
+    /// @notice Function needs to be called by a big enough number of users to state the Presence of present members
+    function statePresence(address[] memory seenMembers) external onlyParticipatingMember {
+        require(!hasRegisteredPresence[msg.sender], "Has already registered Presence");
+        // Ignoring for fast testing purpose
+        // require(block.timestamp > locationsProposed[bestLocationAndTime.locationId].datesProposed[bestLocationAndTime.dateId].timestamp - 300);
+        hasRegisteredPresence[msg.sender] = true;
+        for (uint i = 0; i < seenMembers.length; i++) {
+            presenceCounter[seenMembers[i]] += 1;
+        }
+    }
+
+    function canClaimStake(address member) public view returns(bool) {
+        if (presenceCounter[member] >= presenceTreshold) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    function claimStake() external onlyParticipatingMember {
+        require(!stakeClaimed[msg.sender], "Stake already claimed");
+        if (canClaimStake(msg.sender)) {
+            stakeClaimed[msg.sender] = true;
+            IERC20(tokenUsed).transfer(msg.sender, stakeFee);
+            emit StakeClaimed(msg.sender);
+        }
+        else {
+            revert("Not enough presence votes");
+        }
+    }
+
+    function lengthParticipantsArray() external view returns(uint){
+        return participantsArray.length;
+    }
+
+
+
+
 }
