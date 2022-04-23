@@ -12,8 +12,8 @@ contract ActivitiesHall {
         name = _name;
     }
 
-    function deployActivity(string memory _name) external {
-        address newActivity = address(new Activity(_name, msg.sender));
+    function deployActivity(string memory _name, uint _availableTimeForConsensus) external {
+        address newActivity = address(new Activity(_name, _availableTimeForConsensus, msg.sender));
         activities.push(newActivity);
         emit NewActivity(newActivity,_name, msg.sender);
     }
@@ -25,6 +25,8 @@ contract Activity {
 
     string public name;
     address public creator;
+
+    uint public endingTimeForConsensus;
 
     mapping(address => bool) public ActivityMembers;
     mapping(uint => Location) public locationsProposed;
@@ -60,7 +62,6 @@ contract Activity {
     struct Location {
         string name;
         address proposer;
-        uint endingTime;
         VotingStatus status;
         mapping(uint => Date) datesProposed;
         mapping(uint => DateVotes) datesProposedVotes;
@@ -68,15 +69,16 @@ contract Activity {
         mapping(address => bool) votingUsers;
     }
 
-    constructor(string memory _name, address _creator) {
+    constructor(string memory _name, uint _availableTimeForConsensus, address _creator) {
         name = _name;
+        endingTimeForConsensus = block.timestamp + _availableTimeForConsensus;
         locationCursor = 0;
         creator = _creator;
         ActivityMembers[creator] = true;
     }
 
     modifier isVotePossible(uint _locationId){
-        require(block.timestamp < locationsProposed[_locationId].endingTime, "Vote is no more possible");
+        require(block.timestamp < endingTimeForConsensus, "Vote is no more possible");
         _;
     }
 
@@ -106,10 +108,9 @@ contract Activity {
     }
 
 
-    function proposeLocation(uint _duration, string memory _name, Date[] memory datesProposed) external isUserMember {
+    function proposeLocation(string memory _name, Date[] memory datesProposed) external isUserMember {
         Location storage newLocation = locationsProposed[locationCursor];
         newLocation.name = _name;
-        newLocation.endingTime = block.timestamp + _duration;
         newLocation.proposer = msg.sender;
         newLocation.status = VotingStatus.PENDING;
         uint i;
@@ -147,6 +148,8 @@ contract Activity {
         
         emit NewVote(msg.sender, _locationId, userVotes);
     }
+
+    
 
     
 
