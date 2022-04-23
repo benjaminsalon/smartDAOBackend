@@ -65,8 +65,8 @@ contract Activity {
     }
 
     enum VoteOption {
-        ACCEPT,
-        REJECT
+        REJECT,
+        ACCEPT
     }
 
     struct Date {
@@ -227,6 +227,4 @@ contract Activity {
             emit AmountSentBackToUser(msg.sender, amountToSendBack);
         }
     }
-    
-
 }
