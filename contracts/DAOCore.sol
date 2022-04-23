@@ -24,12 +24,14 @@ contract DAO {
 
     string public name;
 
-    // Proposal[] public proposals;
-
     mapping(address => bool) public DAOMembers;
     mapping(uint => Proposal) public proposals;
 
     uint public proposalCursor;
+
+    event NewProposal(uint proposalId, string name);
+    event NewVote(address voter, uint proposalId, VoteOption vote);
+    event NewMember(address newMember);
 
     enum VotingStatus {
         PENDING,
@@ -44,6 +46,7 @@ contract DAO {
 
     struct Proposal {
         string name;
+        address proposer;
         uint positiveVoteNumber;
         uint negativeVoteNumber;
         uint endingTime;
@@ -62,23 +65,29 @@ contract DAO {
     }
 
     modifier canUserVote(uint _proposalId) {
-        // Check if user is a member of the DAO
-        require(DAOMembers[msg.sender], "Not a DAO member");
         // Check if the user has already voted in the proposal
         require(!proposals[_proposalId].userVotes[msg.sender], "Already voted");
         _;
     }
 
+    modifier isUserMember() {
+         // Check if user is a member of the DAO
+        require(DAOMembers[msg.sender], "Not a DAO member");
+        _;
+    }
 
+    /// @notice Manage who can enter the DAO
+    /// @dev very simple for now needs to be implemented
     function joinDAO() external {
         DAOMembers[msg.sender] = true;
     }
 
 
-    function proposeVote(uint _endingTime, string memory _name) external {
+    function proposeVote(uint _endingTime, string memory _name) external isUserMember {
         Proposal storage newProposal = proposals[proposalCursor];
         newProposal.name = _name;
         newProposal.endingTime = _endingTime;
+        newProposal.proposer = msg.sender;
         proposalCursor += 1;
     }
 
@@ -87,7 +96,7 @@ contract DAO {
     // }
     
 
-    function vote(uint _proposalId, VoteOption myVote) external isVotePossible(_proposalId) canUserVote(_proposalId) {
+    function vote(uint _proposalId, VoteOption myVote) external isVotePossible(_proposalId) isUserMember canUserVote(_proposalId) {
         Proposal storage proposal = proposals[_proposalId];
         if (myVote == VoteOption.ACCEPT) {
             proposal.positiveVoteNumber += 1;
