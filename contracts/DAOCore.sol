@@ -24,9 +24,12 @@ contract DAO {
 
     string public name;
 
-    Proposal[] public proposals;
+    // Proposal[] public proposals;
 
     mapping(address => bool) public DAOMembers;
+    mapping(uint => Proposal) public proposals;
+
+    uint public proposalCursor;
 
     enum VotingStatus {
         PENDING,
@@ -50,6 +53,7 @@ contract DAO {
 
     constructor(string memory _name) {
         name = _name;
+        proposalCursor = 0;
     }
 
     modifier isVotePossible(uint _proposalId){
@@ -65,9 +69,17 @@ contract DAO {
         _;
     }
 
-    function proposeVote(uint _endingTime, string _name) external {
-        Proposal memory newProposal = Proposal({name : _name, endingTime: _endingTime});
-        proposals.push(newProposal);
+
+    function joinDAO() external {
+        DAOMembers[msg.sender] = true;
+    }
+
+
+    function proposeVote(uint _endingTime, string memory _name) external {
+        Proposal storage newProposal = proposals[proposalCursor];
+        newProposal.name = _name;
+        newProposal.endingTime = _endingTime;
+        proposalCursor += 1;
     }
 
     // function addProposalToVote(uint _voteId, Proposal memory _proposal) external isVotePossible(_voteId) {
@@ -76,7 +88,13 @@ contract DAO {
     
 
     function vote(uint _proposalId, VoteOption myVote) external isVotePossible(_proposalId) canUserVote(_proposalId) {
-
+        Proposal storage proposal = proposals[_proposalId];
+        if (myVote == VoteOption.ACCEPT) {
+            proposal.positiveVoteNumber += 1;
+        }
+        else {
+            proposal.negativeVoteNumber += 1;
+        }
     }
 
 }
