@@ -121,7 +121,7 @@ contract Activity {
         emit NewLocation(locationCursor - 1, _name);
     }
 
-    function addDateToExistingLocation(uint locationId, Date memory dateProposed) external isUserMember {
+    function addDateToExistingLocation(uint locationId, Date memory dateProposed) external isLocationIdValid(_locationId) isUserMember isVotePossible(_locationId) {
         Location storage location = locationsProposed[locationId];
         location.datesProposed[location.datesCursor] = dateProposed;
         location.datesCursor += 1;
