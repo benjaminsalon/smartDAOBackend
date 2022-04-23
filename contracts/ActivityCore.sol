@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+import "hardhat/console.sol";
+
 contract ActivitiesHall {
 
     string public name;
@@ -14,8 +16,8 @@ contract ActivitiesHall {
         name = _name;
     }
 
-    function deployActivity(string memory _name, uint _stakeFee, address _tokenUsed, uint _availableTimeForConsensus) external {
-        address newActivity = address(new Activity(_name, _availableTimeForConsensus, _stakeFee, _tokenUsed, msg.sender));
+    function deployActivity(string memory _name, uint _minNumberOfPlayer, uint _stakeFee, address _tokenUsed, uint _availableTimeForConsensus) external {
+        address newActivity = address(new Activity(_name, _availableTimeForConsensus, _minNumberOfPlayer, _stakeFee, _tokenUsed, msg.sender));
         activities.push(newActivity);
         emit NewActivity(newActivity,_name, msg.sender);
     }
@@ -58,6 +60,8 @@ contract Activity {
     event NewMember(address newMember);
     event NewDateProposed(uint locationId, Date dateProposed);
     event AmountSentBackToUser(address user, uint amount);
+    event ResultingVote(bool consensusReached, uint locationId, uint dateId);
+
     enum VotingStatus {
         PENDING,
         ACCEPTED,
@@ -88,10 +92,11 @@ contract Activity {
         mapping(address => bool) votingUsers;
     }
 
-    constructor(string memory _name, uint _availableTimeForConsensus, uint _stakeFee, address _tokenUsed, address _creator) {
+    constructor(string memory _name, uint _availableTimeForConsensus, uint _minNumberOfPlayer, uint _stakeFee, address _tokenUsed, address _creator) {
         name = _name;
         endingTimeForConsensus = block.timestamp + _availableTimeForConsensus;
         locationCursor = 0;
+        minNumberOfPlayer = _minNumberOfPlayer;
         stakeFee = _stakeFee;
         tokenUsed = _tokenUsed;
         creator = _creator;
@@ -200,6 +205,7 @@ contract Activity {
             consensusReached = false;
         }
         voteResultGiven = true;
+        emit ResultingVote(consensusReached, bestLocationAndTime.locationId, bestLocationAndTime.dateId);
     }
 
     function claimUnusedStaking() external isVoteFinishedAndResultGiven isUserMember{
@@ -208,7 +214,8 @@ contract Activity {
         if (consensusReached){
             uint chosenLocationId = bestLocationAndTime.locationId;
             for (uint i = 0; i < locationCursor; i++) {
-                if (i != chosenLocationId) {
+                bool hasUserVotedOnLocation = locationsProposed[i].votingUsers[msg.sender];
+                if (hasUserVotedOnLocation && (i != chosenLocationId)) {
                     amountToSendBack += stakeFee;
                 }
             }
@@ -217,14 +224,17 @@ contract Activity {
         // If consensus is NOT reached user can claim his stake for all Location voting INCLUDING the chosen one
         else {
             for (uint i = 0; i < locationCursor; i++) {
-                amountToSendBack += stakeFee;
+                bool hasUserVotedOnLocation = locationsProposed[i].votingUsers[msg.sender];
+                if (hasUserVotedOnLocation) {
+                    amountToSendBack += stakeFee;
+                }
             }
         }
 
         // We send back the token amount back to the user
         if (amountToSendBack > 0){
             IERC20(tokenUsed).safeTransfer(msg.sender,amountToSendBack);
-            emit AmountSentBackToUser(msg.sender, amountToSendBack);
         }
+        emit AmountSentBackToUser(msg.sender, amountToSendBack);
     }
 }
