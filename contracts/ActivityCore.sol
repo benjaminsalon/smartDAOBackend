@@ -26,6 +26,8 @@ contract Activity {
     string public name;
     address public creator;
 
+    uint minNumberOfPlayer;
+
     struct LocationAndTime {
         uint locationId;
         uint dateId;
@@ -36,9 +38,11 @@ contract Activity {
     LocationAndTime public bestLocationAndTime;
 
     uint public endingTimeForConsensus;
+    bool public consensusReached;
 
     mapping(address => bool) public ActivityMembers;
     mapping(uint => Location) public locationsProposed;
+
 
     uint public locationCursor;
 
@@ -84,12 +88,17 @@ contract Activity {
         locationCursor = 0;
         creator = _creator;
         ActivityMembers[creator] = true;
-
+        consensusReached = false;
         bestLocationAndTime = LocationAndTime(0, 0, 0);
     }
 
-    modifier isVotePossible(uint _locationId){
+    modifier isVotePossible(){
         require(block.timestamp < endingTimeForConsensus, "Vote is no more possible");
+        _;
+    }
+
+    modifier isVoteFinished() {
+        require(block.timestamp >= endingTimeForConsensus, "Vote is not closed");
         _;
     }
 
@@ -133,14 +142,14 @@ contract Activity {
         emit NewLocation(locationCursor - 1, _name);
     }
 
-    function addDateToExistingLocation(uint _locationId, Date memory dateProposed) external isLocationIdValid(_locationId) isUserMember isVotePossible(_locationId) {
+    function addDateToExistingLocation(uint _locationId, Date memory dateProposed) external isLocationIdValid(_locationId) isUserMember isVotePossible {
         Location storage location = locationsProposed[_locationId];
         location.datesProposed[location.datesCursor] = dateProposed;
         location.datesCursor += 1;
         emit NewDateProposed(_locationId, dateProposed);
     }
 
-    function vote(uint _locationId, VoteOption[] memory userVotes) external isLocationIdValid(_locationId) isVotePossible(_locationId) isUserMember canUserVote(_locationId) {
+    function vote(uint _locationId, VoteOption[] memory userVotes) external isLocationIdValid(_locationId) isVotePossible isUserMember canUserVote(_locationId) {
         Location storage location = locationsProposed[_locationId];
 
         require(location.status == VotingStatus.PENDING, "Vote is closed");
@@ -167,7 +176,16 @@ contract Activity {
     }
 
     
+    function getResultVoting() external isVoteFinished {
+        if (bestLocationAndTime.positiveVoteNumber >= minNumberOfPlayer){
+            consensusReached = true;
+        }
+        else {
+            consensusReached = false;
+        }
+    }
 
+    function claimUnusedStaking()
     
 
 }
