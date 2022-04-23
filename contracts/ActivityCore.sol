@@ -6,16 +6,16 @@ contract ActivitiesHall {
 
     string public name;
     address[] public activities;
-    event NewActivity(address newActivityAddress, string name);
+    event NewActivity(address newActivityAddress, string name, address creator);
 
     constructor(string memory _name) {
         name = _name;
     }
 
     function deployActivity(string memory _name) external {
-        address newActivity = address(new Activity(_name));
+        address newActivity = address(new Activity(_name, msg.sender));
         activities.push(newActivity);
-        emit NewActivity(newActivity,_name);
+        emit NewActivity(newActivity,_name, msg.sender);
     }
 
 
@@ -24,6 +24,7 @@ contract ActivitiesHall {
 contract Activity {
 
     string public name;
+    address public creator;
 
     mapping(address => bool) public ActivityMembers;
     mapping(uint => Proposal) public placesProposed;
@@ -67,9 +68,11 @@ contract Activity {
         mapping(address => bool) votingUsers;
     }
 
-    constructor(string memory _name) {
+    constructor(string memory _name, address _creator) {
         name = _name;
         proposalCursor = 0;
+        creator = _creator;
+        ActivityMembers[creator] = true;
     }
 
     modifier isVotePossible(uint _proposalId){
