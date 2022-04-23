@@ -48,6 +48,9 @@ contract Activity {
 
     struct Date {
         uint timestamp;
+    }
+
+    struct DateVotes {
         uint positiveVoteNumber;
         uint negativeVoteNumber;
         uint totalVoteNumber;
@@ -61,6 +64,7 @@ contract Activity {
         uint endingTime;
         VotingStatus status;
         mapping(uint => Date) datesProposed;
+        mapping(uint => DateVotes) datesProposedVotes;
         uint datesCursor;
         mapping(address => bool) votingUsers;
     }
@@ -101,10 +105,10 @@ contract Activity {
     }
 
 
-    function propose(uint _endingTime, string memory _name, Date[] memory datesProposed) external isUserMember {
+    function propose(uint _duration, string memory _name, Date[] memory datesProposed) external isUserMember {
         Proposal storage newProposal = placesProposed[proposalCursor];
         newProposal.name = _name;
-        newProposal.endingTime = _endingTime;
+        newProposal.endingTime = block.timestamp + _duration;
         newProposal.proposer = msg.sender;
         newProposal.status = VotingStatus.PENDING;
         uint i;
@@ -130,12 +134,12 @@ contract Activity {
         for (uint i = 0; i < proposal.datesCursor; i++ ) {
             VoteOption userVote = userVotes[i];
             if (userVote == VoteOption.ACCEPT) {
-                proposal.datesProposed[i].positiveVoteNumber += 1;
+                proposal.datesProposedVotes[i].positiveVoteNumber += 1;
             }
             else {
-                proposal.datesProposed[i].negativeVoteNumber += 1;
+                proposal.datesProposedVotes[i].negativeVoteNumber += 1;
             }
-            proposal.datesProposed[i].totalVoteNumber += 1;
+            proposal.datesProposedVotes[i].totalVoteNumber += 1;
         }
 
         proposal.votingUsers[msg.sender] = true;
