@@ -81,6 +81,7 @@ contract Activity {
         uint positiveVoteNumber;
         uint negativeVoteNumber;
         uint totalVoteNumber;
+        mapping(address => bool) votingUsers;
     }
 
     struct Location {
@@ -178,6 +179,7 @@ contract Activity {
             VoteOption userVote = userVotes[i];
             if (userVote == VoteOption.ACCEPT) {
                 location.datesProposedVotes[i].positiveVoteNumber += 1;
+                location.datesProposedVotes[i].votingUsers[msg.sender] = true;
                 uint positiveVoteNumber = location.datesProposedVotes[i].positiveVoteNumber;
                 if (positiveVoteNumber > bestLocationAndTime.positiveVoteNumber) {
                     bestLocationAndTime.dateId = i;
@@ -213,10 +215,21 @@ contract Activity {
         // If consensus is reached user can claim his stake for all Location voting EXCEPT the chosen one
         if (consensusReached){
             uint chosenLocationId = bestLocationAndTime.locationId;
+            uint chosenDateId = bestLocationAndTime.dateId;
             for (uint i = 0; i < locationCursor; i++) {
                 bool hasUserVotedOnLocation = locationsProposed[i].votingUsers[msg.sender];
-                if (hasUserVotedOnLocation && (i != chosenLocationId)) {
-                    amountToSendBack += stakeFee;
+                if (i == chosenLocationId) {
+                    bool hasUserVotedOnChosenDate = locationsProposed[chosenLocationId].datesProposedVotes[chosenDateId].votingUsers[msg.sender];
+                    if (!hasUserVotedOnChosenDate && hasUserVotedOnLocation) {
+                        console.log("First if : i value",i);
+                        amountToSendBack += stakeFee;
+                    }
+                }
+                else {
+                    if (hasUserVotedOnLocation)  {
+                        console.log("Second if : i value",i);
+                        amountToSendBack += stakeFee;
+                    }
                 }
             }
         }
