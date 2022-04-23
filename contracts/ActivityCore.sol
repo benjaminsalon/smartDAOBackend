@@ -106,7 +106,7 @@ contract Activity {
     }
 
 
-    function propose(uint _duration, string memory _name, Date[] memory datesProposed) external isUserMember {
+    function proposeLocation(uint _duration, string memory _name, Date[] memory datesProposed) external isUserMember {
         Location storage newLocation = locationsProposed[locationCursor];
         newLocation.name = _name;
         newLocation.endingTime = block.timestamp + _duration;
@@ -121,11 +121,11 @@ contract Activity {
         emit NewLocation(locationCursor - 1, _name);
     }
 
-    function addDateToExistingLocation(uint locationId, Date memory dateProposed) external isLocationIdValid(_locationId) isUserMember isVotePossible(_locationId) {
-        Location storage location = locationsProposed[locationId];
+    function addDateToExistingLocation(uint _locationId, Date memory dateProposed) external isLocationIdValid(_locationId) isUserMember isVotePossible(_locationId) {
+        Location storage location = locationsProposed[_locationId];
         location.datesProposed[location.datesCursor] = dateProposed;
         location.datesCursor += 1;
-        emit NewDateProposed(locationId, dateProposed);
+        emit NewDateProposed(_locationId, dateProposed);
     }
 
     function vote(uint _locationId, VoteOption[] memory userVotes) external isLocationIdValid(_locationId) isVotePossible(_locationId) isUserMember canUserVote(_locationId) {
