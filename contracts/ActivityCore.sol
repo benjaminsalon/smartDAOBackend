@@ -27,14 +27,14 @@ contract Activity {
     address public creator;
 
     mapping(address => bool) public ActivityMembers;
-    mapping(uint => Proposal) public placesProposed;
+    mapping(uint => Location) public locationsProposed;
 
-    uint public proposalCursor;
+    uint public locationCursor;
 
-    event NewProposal(uint proposalId, string name);
-    event NewVote(address voter, uint proposalId, VoteOption[] vote);
+    event NewLocation(uint locationId, string name);
+    event NewVote(address voter, uint locationId, VoteOption[] vote);
     event NewMember(address newMember);
-    event NewDateProposed(uint proposalId, Date dateProposed);
+    event NewDateProposed(uint locationId, Date dateProposed);
 
     enum VotingStatus {
         PENDING,
@@ -57,7 +57,7 @@ contract Activity {
         uint totalVoteNumber;
     }
 
-    struct Proposal {
+    struct Location {
         string name;
         address proposer;
         uint endingTime;
@@ -70,19 +70,19 @@ contract Activity {
 
     constructor(string memory _name, address _creator) {
         name = _name;
-        proposalCursor = 0;
+        locationCursor = 0;
         creator = _creator;
         ActivityMembers[creator] = true;
     }
 
-    modifier isVotePossible(uint _proposalId){
-        require(block.timestamp < placesProposed[_proposalId].endingTime, "Vote is no more possible");
+    modifier isVotePossible(uint _locationId){
+        require(block.timestamp < locationsProposed[_locationId].endingTime, "Vote is no more possible");
         _;
     }
 
-    modifier canUserVote(uint _proposalId) {
-        // Check if the user has already voted in the proposal
-        require(!placesProposed[_proposalId].votingUsers[msg.sender], "Already voted");
+    modifier canUserVote(uint _locationId) {
+        // Check if the user has already voted in the location
+        require(!locationsProposed[_locationId].votingUsers[msg.sender], "Already voted");
         _;
     }
 
@@ -92,9 +92,9 @@ contract Activity {
         _;
     }
 
-    modifier isProposalIdValid(uint _proposalId) {
-        // Check if _proposalId points to an existing proposal
-        require(_proposalId < proposalCursor, "ProposalId invalid");
+    modifier isLocationIdValid(uint _locationId) {
+        // Check if _locationId points to an existing location
+        require(_locationId < locationCursor, "LocationId invalid");
         _;
     }
 
@@ -107,45 +107,45 @@ contract Activity {
 
 
     function propose(uint _duration, string memory _name, Date[] memory datesProposed) external isUserMember {
-        Proposal storage newProposal = placesProposed[proposalCursor];
-        newProposal.name = _name;
-        newProposal.endingTime = block.timestamp + _duration;
-        newProposal.proposer = msg.sender;
-        newProposal.status = VotingStatus.PENDING;
+        Location storage newLocation = locationsProposed[locationCursor];
+        newLocation.name = _name;
+        newLocation.endingTime = block.timestamp + _duration;
+        newLocation.proposer = msg.sender;
+        newLocation.status = VotingStatus.PENDING;
         uint i;
         for (i = 0; i < datesProposed.length; i++){
-            newProposal.datesProposed[i] = datesProposed[i];
+            newLocation.datesProposed[i] = datesProposed[i];
         }
-        newProposal.datesCursor = i;
-        proposalCursor += 1;
-        emit NewProposal(proposalCursor - 1, _name);
+        newLocation.datesCursor = i;
+        locationCursor += 1;
+        emit NewLocation(locationCursor - 1, _name);
     }
 
-    function addDateToExistingProposal(uint proposalId, Date memory dateProposed) external isUserMember {
-        Proposal storage proposal = placesProposed[proposalId];
-        proposal.datesProposed[proposal.datesCursor] = dateProposed;
-        proposal.datesCursor += 1;
-        emit NewDateProposed(proposalId, dateProposed);
+    function addDateToExistingLocation(uint locationId, Date memory dateProposed) external isUserMember {
+        Location storage location = locationsProposed[locationId];
+        location.datesProposed[location.datesCursor] = dateProposed;
+        location.datesCursor += 1;
+        emit NewDateProposed(locationId, dateProposed);
     }
 
-    function vote(uint _proposalId, VoteOption[] memory userVotes) external isProposalIdValid(_proposalId) isVotePossible(_proposalId) isUserMember canUserVote(_proposalId) {
-        Proposal storage proposal = placesProposed[_proposalId];
+    function vote(uint _locationId, VoteOption[] memory userVotes) external isLocationIdValid(_locationId) isVotePossible(_locationId) isUserMember canUserVote(_locationId) {
+        Location storage location = locationsProposed[_locationId];
 
-        require(proposal.status == VotingStatus.PENDING, "Vote is closed");
-        for (uint i = 0; i < proposal.datesCursor; i++ ) {
+        require(location.status == VotingStatus.PENDING, "Vote is closed");
+        for (uint i = 0; i < location.datesCursor; i++ ) {
             VoteOption userVote = userVotes[i];
             if (userVote == VoteOption.ACCEPT) {
-                proposal.datesProposedVotes[i].positiveVoteNumber += 1;
+                location.datesProposedVotes[i].positiveVoteNumber += 1;
             }
             else {
-                proposal.datesProposedVotes[i].negativeVoteNumber += 1;
+                location.datesProposedVotes[i].negativeVoteNumber += 1;
             }
-            proposal.datesProposedVotes[i].totalVoteNumber += 1;
+            location.datesProposedVotes[i].totalVoteNumber += 1;
         }
 
-        proposal.votingUsers[msg.sender] = true;
+        location.votingUsers[msg.sender] = true;
         
-        emit NewVote(msg.sender, _proposalId, userVotes);
+        emit NewVote(msg.sender, _locationId, userVotes);
     }
 
     
