@@ -1,42 +1,14 @@
-# Advanced Sample Hardhat Project
+# SmartDAO
+We are planning to improve the DAO's by implementing manipulation features like:
+the possibility for someone to join a DAO community around an activity for free and quickly
+the possibility for someone to create a DAO community around an activity
+as a member of a DAO community, you’ll be able to vote for events oncoming and also propose new events at a new place or new date
+The token used is an ERC20 allowing users to participate in the DAO by staking an amount of tokens. If someone does not participate in the event he had stacked for, he loses the amount of token stacked.This amount is going to be shared between people really participating in the event.  By participating in an event, the user is able to claim for his stake and a part of the non participating people. We also used IPFS in order to store the avatar of the user as a NFT.
 
-This project demonstrates an advanced Hardhat use case, integrating other tools commonly used alongside Hardhat in the ecosystem.
 
-The project comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts. It also comes with a variety of other tools, preconfigured to work with the project code.
 
-Try running some of the following tasks:
+Firstly, in order to participate in the DAO, the user needs to connect himself by connecting his Wallet. So we used Metamask there. The user is also able to upload a file representing his avatar. The avatar file is going to be stored on-chain on IPFS as a NFT for the user. 
+Secondly, we use SKALE network to provide a DAO for free for everyone : no gas fees, quick to deploy and to interact with the contract. It also allows us to build in a near future our own league with the RNG providing a full random matchmaking between teams in a sport competition for example. 
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-npx hardhat help
-REPORT_GAS=true npx hardhat test
-npx hardhat coverage
-npx hardhat run scripts/deploy.js
-node scripts/deploy.js
-npx eslint '**/*.js'
-npx eslint '**/*.js' --fix
-npx prettier '**/*.{json,sol,md}' --check
-npx prettier '**/*.{json,sol,md}' --write
-npx solhint 'contracts/**/*.sol'
-npx solhint 'contracts/**/*.sol' --fix
-```
-
-# Etherscan verification
-
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Ropsten.
-
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Ropsten node URL (eg from Alchemy), and the private key of the account which will send the deployment transaction. With a valid .env file in place, first deploy your contract:
-
-```shell
-hardhat run --network ropsten scripts/deploy.js
-```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network ropsten DEPLOYED_CONTRACT_ADDRESS "Hello, Hardhat!"
-```
+## Frontend Code
+You can access the backend code in the following link : https://github.com/Gerkep/SmartDAO
