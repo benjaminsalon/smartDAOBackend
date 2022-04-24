@@ -1,4 +1,4 @@
-# SmartDAO
+# ActivityDAO
 We are planning to improve the DAO's by implementing manipulation features like:
 the possibility for someone to join a DAO community around an activity for free and quickly
 the possibility for someone to create a DAO community around an activity
