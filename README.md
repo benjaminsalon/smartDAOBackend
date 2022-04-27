@@ -17,4 +17,4 @@ Secondly, we use SKALE network to provide a DAO for free for everyone : no gas f
 
 
 ## Frontend Code
-You can access the backend code in the following link : https://github.com/Gerkep/SmartDAO
+You can access the front-end code in the following link : https://github.com/Gerkep/SmartDAO
